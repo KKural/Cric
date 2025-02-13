@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.middleware.csrf import get_token
 from django.http import HttpResponse, HttpResponseRedirect
@@ -39,6 +39,13 @@ def login_view(request):
             return HttpResponse("Database table missing. Please run 'python manage.py migrate'.", status=500)
     csrf_token = get_token(request)
     return render(request, 'login.html', {'csrf_token': csrf_token})
+
+@login_required
+def logout_view(request):
+    if request.method == 'POST':
+        logout(request)
+        return redirect('login')
+    return render(request, 'logout.html')
 
 @login_required
 def Home(request):
@@ -96,6 +103,7 @@ def dashboard(request):
         'upcoming_match': upcoming_match,
         'upcoming_table_html': upcoming_table_html,  # updated variable
         'previous_matches': prev_matches_info,
+        'match_id': upcoming_match.id if upcoming_match else None,  # Pass match_id to context
     }
     return render(request, 'dashboard.html', context)
 
@@ -130,52 +138,50 @@ def manage_matches(request):
     return render(request, 'manage_matches.html')
 
 @staff_member_required
-def attendance(request):
+def attendance(request, match_id=None):
     selected_match = None
-    players = []
+    team1_players = []
+    team2_players = []
     attended_player_ids = set()
-
-    if request.method == 'POST':
-        match_id = request.POST.get('match_id')
-        if match_id:
-            match = get_object_or_404(Match, pk=match_id)
+    match_id = match_id or request.GET.get('match_id') or request.POST.get('match_id')
+    recent_matches = Match.objects.order_by('-date')[:3]
+    if match_id:
+        selected_match = get_object_or_404(Match, pk=match_id)
+    else:
+        selected_match = recent_matches.first()
+    
+    if selected_match:
+        team1_players = Player.objects.filter(team=selected_match.team1)
+        team2_players = Player.objects.filter(team=selected_match.team2)
+        if request.method == 'POST':
             # If “attended_...” checkboxes are present, update attendance
             if any(k.startswith('attended_') for k in request.POST.keys()):
-                for player in Player.objects.filter(team__in=[match.team1, match.team2]):
+                for player in team1_players | team2_players:
                     attended = request.POST.get(f'attended_{player.id}', 'off') == 'on'
                     Attendance.objects.update_or_create(
                         player=player,
-                        match=match,
+                        match=selected_match,
                         defaults={'attended': attended}
                     )
-                return redirect('attendance')
-            else:
-                # Just selected the match from the dropdown
-                selected_match = match
-                players = Player.objects.filter(team__in=[match.team1, match.team2])
-                # Build a set for quick “attended” lookup
+                # Update attended_player_ids after saving attendance
                 attended_player_ids = set(
-                    Attendance.objects.filter(match=match, attended=True)
+                    Attendance.objects.filter(match=selected_match, attended=True)
                     .values_list('player_id', flat=True)
                 )
+                return redirect('attendance', match_id=selected_match.id)
+        else:
+            # Build a set for quick “attended” lookup
+            attended_player_ids = set(
+                Attendance.objects.filter(match=selected_match, attended=True)
+                .values_list('player_id', flat=True)
+            )
 
-    recent_matches = Match.objects.filter().order_by('date')[:3]
     context = {
         'recent_matches': recent_matches,
         'selected_match': selected_match,
-        'players': players,
+        'team1_players': team1_players,
+        'team2_players': team2_players,
         'attended_player_ids': attended_player_ids,
     }
     return render(request, 'attendance.html', context)
-
-# The following admin-only views have been removed in favor of their implementations in admin.py
-# @login_required
-# def create_match(request):
-#     # Process form submission if needed; otherwise, render form
-#     return render(request, 'create_match.html')
-#
-# @login_required
-# def update_payments(request):
-#     # Process form submission if needed; otherwise, render form
-#     return render(request, 'update_payments.html')
 

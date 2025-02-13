@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'indcric',  # Ensure this line is present
     'django_tables2',
+    'indcric.management.commands',  # Add this line
 ]
 
 MIDDLEWARE = [

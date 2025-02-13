@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from .views import login_view, dashboard, register_view, Home, matches, match_detail, match_delete, manage_matches, attendance
+from .views import login_view, dashboard, register_view, Home, matches, match_detail, match_delete, manage_matches, attendance, logout_view
 import indcric.admin  # Ensure the custom admin view is registered
 
 urlpatterns = [
@@ -30,5 +30,6 @@ urlpatterns = [
     path('match/<int:pk>/', match_detail, name='match_detail'),
     path('match/<int:pk>/delete/', match_delete, name='match_delete'),
     path('matches/manage/', manage_matches, name='manage_matches'),  # added URL pattern
-    path('matches/attendance/', attendance, name='attendance'),  # added URL pattern
+    path('matches/attendance/<int:match_id>/', attendance, name='attendance'),  # updated URL pattern
+    path('logout/', logout_view, name='logout'),
 ]
