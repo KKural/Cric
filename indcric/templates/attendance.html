@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+  <h2>Attendance</h2>
+  <!-- First form to select a match -->
+  <form method="post">
+    {% csrf_token %}
+    <label for="match_id">Select Match:</label>
+    <select name="match_id" id="match_id" onchange="this.form.submit()">
+      <option value="">--Select a match--</option>
+      {% for match in recent_matches %}
+        <option value="{{ match.id }}"
+          {% if selected_match and match.id == selected_match.id %}selected{% endif %}>
+          {{ match.name }} - {{ match.date }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <!-- Second form to list players and save attendance -->
+  {% if selected_match %}
+    <form method="post">
+      {% csrf_token %}
+      <!-- Pass the selected match_id so it doesn’t get lost -->
+      <input type="hidden" name="match_id" value="{{ selected_match.id }}">
+      <table border="1" cellpadding="5">
+        <tr>
+          <th>Player</th>
+          <th>Attended</th>
+        </tr>
+        {% for player in players %}
+          <tr>
+            <td>{{ player.user.username }}</td>
+            <td>
+              <input
+                type="checkbox"
+                name="attended_{{ player.id }}"
+                {% if player.id in attended_player_ids %}checked{% endif %}
+              >
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+      <button type="submit">Save Attendance</button>
+    </form>
+  {% endif %}
+{% endblock %}

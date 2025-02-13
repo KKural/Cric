@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load django_tables2 %}
+{% block content %}
+  <!-- Wallet display at top-right -->
+  <div style="text-align: right; font-weight: bold;">
+    Wallet Amount: €{{ wallet_amount }}
+  </div>
+
+  <!-- Upcoming Match Section -->
+  <section>
+    <h2>Upcoming Match</h2>
+    <div class="table-container">
+      {% if upcoming_table_html %}
+        {{ upcoming_table_html|safe }}
+      {% else %}
+        <p>No upcoming match scheduled.</p>
+      {% endif %}
+    </div>
+    <div class="progress" style="display: none;"></div>
+  </section>
+
+  <!-- Previous Matches Section -->
+  <section>
+    <h2>Previous Matches</h2>
+    {% if previous_matches %}
+      <table border="1" cellpadding="5">
+        <tr>
+          <th>Match</th>
+          <th>Date</th>
+          <th>Total Amount Paid</th>
+          <th>Match Cost</th>
+          <th>Location</th>
+        </tr>
+        {% for info in previous_matches %}
+          <tr>
+            <td>{{ info.match.name }}</td>
+            <td>{{ info.date }}</td>
+            <td>€{{ info.total_paid }}</td>
+            <td>€{{ info.cost }}</td>
+            <td>{{ info.location }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>No previous matches found.</p>
+    {% endif %}
+  </section>
+  <!-- ...existing dashboard content such as user tables and charts... -->
+{% endblock %}

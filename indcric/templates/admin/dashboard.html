@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+    <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Does this cookie string begin with the name we want?
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+
+        function updatePayment(paymentId, amount, status) {
+            fetch('/update_payment/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    payment_id: paymentId,
+                    amount: amount,
+                    status: status
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert('Payment updated successfully');
+                  }
+              });
+        }
+
+        function updateAdvance(advanceId, amount, status) {
+            fetch('/update_advance/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                body: JSON.stringify({
+                    advance_id: advanceId,
+                    amount: amount,
+                    status: status
+                })
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      alert('Wallet updated successfully');
+                  }
+              });
+        }
+    </script>
+</head>
+<body>
+    <h1>Welcome to the Admin Dashboard</h1>
+    <h2>Users, Payments, and Advances</h2>
+    <form method="post">
+        {% csrf_token %}
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Payment Amount</th>
+                    <th>Payment Status</th>
+                    <th>Wallet Amount</th>
+                    <th>Wallet Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in indcric_users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.payment_amount }}</td>
+                    <td>{{ user.payment_status }}</td>
+                    <td>{{ user.advance_amount }}</td>
+                    <td>{{ user.advance_status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </form>
+</body>
+</html>

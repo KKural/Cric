@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Update Payments{% endblock %}
+{% block content %}
+  <h2>Update Payments</h2>
+  <!-- First form to select a match -->
+  <form method="post">
+    {% csrf_token %}
+    <label for="match_id">Select Match:</label>
+    <select name="match_id" id="match_id" onchange="this.form.submit()">
+      <option value="">--Select a match--</option>
+      {% for match in recent_matches %}
+        <option value="{{ match.id }}"
+          {% if selected_match and match.id == selected_match.id %}selected{% endif %}>
+          {{ match.name }} - {{ match.date }}
+        </option>
+      {% endfor %}
+    </select>
+  </form>
+
+  <!-- Second form to list attended players and mark payment -->
+  {% if selected_match %}
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="match_id" value="{{ selected_match.id }}">
+      <table border="1" cellpadding="5">
+        <tr>
+          <th>Player</th>
+          <th>Paid?</th>
+        </tr>
+        {% for player in attended_players %}
+          <tr>
+            <td>{{ player.user.username }}</td>
+            <td>
+              <input
+                type="checkbox"
+                name="paid_{{ player.id }}"
+              >
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+      <button type="submit">Save Payments</button>
+    </form>
+  {% endif %}
+{% endblock %}

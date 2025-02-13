@@ -1,0 +1,42 @@
+<html>
+<head>
+    <title>{% block title %}Home{% endblock %}</title>
+    <style>
+      body { margin: 0; font-family: Arial, sans-serif; }
+      .container { display: flex; height: 100vh; }
+      .sidebar { width: 250px; background: #f4f4f4; padding: 20px; }
+      .content { flex: 1; padding: 20px; }
+      .menu-item { margin: 10px 0; }
+      .menu-item a { text-decoration: none; color: #333; }
+      .has-submenu { cursor: pointer; }
+      .submenu { display: block; list-style: none; padding-left: 20px; }
+      .submenu li { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <!-- Home title -->
+            <h2>Home</h2>
+            <!-- Dashboard link -->
+            <div class="menu-item"><a href="{% url 'dashboard' %}">Dashboard</a></div>
+            {% if user.is_staff %}
+              <li class="menu-item">
+                <a href="#">Manage Matches</a>
+                <ul class="submenu">
+                    <li><a href="{% url 'attendance' %}">Attendance</a></li> <!-- New Attendance link -->
+                    <li><a href="{% url 'admin:create_match' %}">Create Match</a></li>
+                    <li><a href="{% url 'admin:update_payments' %}">Update payments</a></li>
+                </ul>
+              </li>
+              <div class="menu-item"><a href="{% url 'admin:create_users' %}">Manage Users</a></div>
+            {% endif %}
+        </div>
+        <div class="content">
+            {% block content %}
+            <!-- Page-specific content goes here -->
+            {% endblock %}
+        </div>
+    </div>
+</body>
+</html>

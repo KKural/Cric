@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+{% if user.is_staff %}
+  <h1>Manage Users</h1>
+  {% if message %}
+    <p>{{ message }}</p>
+  {% endif %}
+  <h2>Existing Users</h2>
+  <ul>
+    {% for u in non_staff_users %}
+      <li>{{ u.username }} - {{ u.email }}</li>
+    {% empty %}
+      <li>No users found.</li>
+    {% endfor %}
+  </ul>
+  <h2>Add Multiple Users</h2>
+  <p>Enter one user per line in the format: username, password, [email]</p>
+  <form method="post">
+    {% csrf_token %}
+    <textarea name="users_data" rows="10" cols="50" placeholder="username, password, email (optional)"></textarea>
+    <br/>
+    <button type="submit">Add Users</button>
+  </form>
+  <br>
+  <a href="{% url 'admin:admin_dashboard' %}">Back to Dashboard</a>
+{% else %}
+  <p>Access Denied. Admins only.</p>
+{% endif %}
+{% endblock %}

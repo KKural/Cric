@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><title>Users Added Successfully</title></head>
+<body>
+    <h1>Users Added Successfully</h1>
+    <ul>
+        {% for user in created_users %}
+            <li>{{ user.username }} ({{ user.email }})</li>
+        {% empty %}
+            <li>No users were added.</li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'admin_dashboard' %}">Back to Dashboard</a>
+</body>
+</html>
