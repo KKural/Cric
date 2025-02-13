@@ -17,8 +17,8 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from .views import login_view, dashboard, register_view, Home, matches, match_detail, match_delete, manage_matches, attendance, logout_view
-import indcric.admin  # Ensure the custom admin view is registered
+from .views import login_view, dashboard, register_view, Home, matches, match_detail, match_delete, logout_view
+from .admin import manage_matches, attendance  # Import the views from admin
 
 urlpatterns = [
     path('', login_view, name='login'),

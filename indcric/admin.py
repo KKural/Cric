@@ -35,8 +35,6 @@ def admin_dashboard(request: HttpRequest):
         user.matches = ", ".join(match.name for match in matches) if matches.exists() else "N/A"
     logger.debug(f"Queried {len(users)} users with payment, advance and match info")
     
-    # Remove debugging breakpoint if not needed:
-    # pdb.set_trace()
     return render(request, 'admin/dashboard.html', {'indcric_users': users})
 
 @login_required
@@ -230,6 +228,58 @@ def create_users(request: HttpRequest):
         non_staff_users = User.objects.filter(is_staff=False)
     return render(request, 'admin/create_users.html', {'non_staff_users': non_staff_users, 'message': message})
 
+@staff_member_required
+def manage_matches(request):
+    return render(request, 'manage_matches.html')
+
+@staff_member_required
+def attendance(request, match_id=None):
+    selected_match = None
+    team1_players = []
+    team2_players = []
+    attended_player_ids = set()
+    match_id = match_id or request.GET.get('match_id') or request.POST.get('match_id')
+    recent_matches = Match.objects.order_by('-date')[:3]
+    if match_id:
+        selected_match = get_object_or_404(Match, pk=match_id)
+    else:
+        selected_match = recent_matches.first()
+    
+    if selected_match:
+        team1_players = Player.objects.filter(team=selected_match.team1)
+        team2_players = Player.objects.filter(team=selected_match.team2)
+        if request.method == 'POST':
+            # If “attended_...” checkboxes are present, update attendance
+            if any(k.startswith('attended_') for k in request.POST.keys()):
+                for player in team1_players | team2_players:
+                    attended = request.POST.get(f'attended_{player.id}', 'off') == 'on'
+                    Attendance.objects.update_or_create(
+                        player=player,
+                        match=selected_match,
+                        defaults={'attended': attended}
+                    )
+                # Update attended_player_ids after saving attendance
+                attended_player_ids = set(
+                    Attendance.objects.filter(match=selected_match, attended=True)
+                    .values_list('player_id', flat=True)
+                )
+                return redirect('attendance', match_id=selected_match.id)
+        else:
+            # Build a set for quick “attended” lookup
+            attended_player_ids = set(
+                Attendance.objects.filter(match=selected_match, attended=True)
+                .values_list('player_id', flat=True)
+            )
+
+    context = {
+        'recent_matches': recent_matches,
+        'selected_match': selected_match,
+        'team1_players': team1_players,
+        'team2_players': team2_players,
+        'attended_player_ids': attended_player_ids,
+    }
+    return render(request, 'attendance.html', context)
+
 def get_urls():
     urls = original_get_urls()
     custom_urls = [
@@ -239,6 +289,8 @@ def get_urls():
         path('create_match/', admin.site.admin_view(create_match), name='create_match'),
         path('update_payments/', admin.site.admin_view(update_payments), name='update_payments'),
         path('create_users/', admin.site.admin_view(create_users), name='create_users'),
+        path('manage_matches/', admin.site.admin_view(manage_matches), name='manage_matches'),
+        path('attendance/', admin.site.admin_view(attendance), name='attendance'),
     ]
     return custom_urls + urls
 

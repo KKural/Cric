@@ -11,7 +11,6 @@ from indcric.models import User, Payment, Wallet, Match, Player, Team, Attendanc
 from .tables import UpcomingMatchTable
 import pandas as pd
 from django.contrib.admin.views.decorators import staff_member_required
-from django.http import HttpRequest
 
 def register_view(request):
     if request.method == 'POST':
@@ -133,84 +132,4 @@ def match_delete(request, pk):
     # Finally, delete the match itself
     match.delete()
     return HttpResponseRedirect(reverse('dashboard'))
-
-@staff_member_required
-def manage_matches(request):
-    return render(request, 'manage_matches.html')
-
-@staff_member_required
-def attendance(request, match_id=None):
-    selected_match = None
-    team1_players = []
-    team2_players = []
-    attended_player_ids = set()
-    match_id = match_id or request.GET.get('match_id') or request.POST.get('match_id')
-    recent_matches = Match.objects.order_by('-date')[:3]
-    if match_id:
-        selected_match = get_object_or_404(Match, pk=match_id)
-    else:
-        selected_match = recent_matches.first()
-    
-    if selected_match:
-        team1_players = Player.objects.filter(team=selected_match.team1)
-        team2_players = Player.objects.filter(team=selected_match.team2)
-        if request.method == 'POST':
-            # If “attended_...” checkboxes are present, update attendance
-            if any(k.startswith('attended_') for k in request.POST.keys()):
-                for player in team1_players | team2_players:
-                    attended = request.POST.get(f'attended_{player.id}', 'off') == 'on'
-                    Attendance.objects.update_or_create(
-                        player=player,
-                        match=selected_match,
-                        defaults={'attended': attended}
-                    )
-                # Update attended_player_ids after saving attendance
-                attended_player_ids = set(
-                    Attendance.objects.filter(match=selected_match, attended=True)
-                    .values_list('player_id', flat=True)
-                )
-                return redirect('attendance', match_id=selected_match.id)
-        else:
-            # Build a set for quick “attended” lookup
-            attended_player_ids = set(
-                Attendance.objects.filter(match=selected_match, attended=True)
-                .values_list('player_id', flat=True)
-            )
-
-    context = {
-        'recent_matches': recent_matches,
-        'selected_match': selected_match,
-        'team1_players': team1_players,
-        'team2_players': team2_players,
-        'attended_player_ids': attended_player_ids,
-    }
-    return render(request, 'attendance.html', context)
-
-@login_required
-def create_users(request: HttpRequest):
-    if not request.user.is_staff:
-        return render(request, 'admin/unauthorized.html', status=403)
-    non_staff_users = User.objects.filter(is_staff=False)
-    message = None
-    if request.method == "POST":
-        if 'users_data' in request.POST:
-            users_data = request.POST.get('users_data', '')
-            created_users = []
-            for line in users_data.splitlines():
-                parts = [p.strip() for p in line.split(',')]
-                if len(parts) >= 2:
-                    username, password = parts[0], parts[1]
-                    email = parts[2] if len(parts) > 2 else ''
-                    # Create user (default create_user creates non-staff user)
-                    user = User.objects.create_user(username=username, password=password, email=email)
-                    created_users.append(user)
-            message = f"Created {len(created_users)} users."
-            non_staff_users = User.objects.filter(is_staff=False)
-        elif 'delete_user' in request.POST:
-            user_id = request.POST.get('delete_user')
-            user = get_object_or_404(User, id=user_id)
-            user.delete()
-            message = f"User {user.username} deleted successfully."
-            non_staff_users = User.objects.filter(is_staff=False)
-    return render(request, 'admin/create_users.html', {'non_staff_users': non_staff_users, 'message': message})
 

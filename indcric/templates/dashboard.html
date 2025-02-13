@@ -17,7 +17,9 @@
           <th>Time</th>
           <th>Duration</th>
           <th>Location</th>
-          <th>Actions</th>
+          {% if user.is_staff %}
+            <th>Actions</th>
+          {% endif %}
         </tr>
         <tr>
           <td>{{ upcoming_match.name }}</td>
@@ -25,12 +27,14 @@
           <td>{{ upcoming_match.time }}</td>
           <td>{{ upcoming_match.duration }}</td>
           <td>{{ upcoming_match.location }}</td>
-          <td>
-            <form method="post" action="{% url 'match_delete' upcoming_match.id %}" style="display:inline;">
-              {% csrf_token %}
-              <button type="submit" style="background:red; color:white;">Delete</button>
-            </form>
-          </td>
+          {% if user.is_staff %}
+            <td>
+              <form method="post" action="{% url 'match_delete' upcoming_match.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" style="background:red; color:white;">Delete</button>
+              </form>
+            </td>
+          {% endif %}
         </tr>
       </table>
     {% else %}
