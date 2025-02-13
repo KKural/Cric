@@ -24,8 +24,8 @@
               <li class="menu-item">
                 <a href="#">Manage Matches</a>
                 <ul class="submenu">
-                    <li><a href="{% url 'attendance' match_id=1 %}">Attendance</a></li> <!-- New Attendance link with match_id -->
                     <li><a href="{% url 'admin:create_match' %}">Create Match</a></li>
+                    <li><a href="{% url 'attendance' match_id=1 %}">Attendance</a></li> <!-- New Attendance link with match_id -->
                     <li><a href="{% url 'admin:update_payments' %}">Update payments</a></li>
                 </ul>
               </li>

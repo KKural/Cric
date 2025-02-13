@@ -11,6 +11,7 @@ from indcric.models import User, Payment, Wallet, Match, Player, Team, Attendanc
 from .tables import UpcomingMatchTable
 import pandas as pd
 from django.contrib.admin.views.decorators import staff_member_required
+from django.http import HttpRequest
 
 def register_view(request):
     if request.method == 'POST':
@@ -184,4 +185,32 @@ def attendance(request, match_id=None):
         'attended_player_ids': attended_player_ids,
     }
     return render(request, 'attendance.html', context)
+
+@login_required
+def create_users(request: HttpRequest):
+    if not request.user.is_staff:
+        return render(request, 'admin/unauthorized.html', status=403)
+    non_staff_users = User.objects.filter(is_staff=False)
+    message = None
+    if request.method == "POST":
+        if 'users_data' in request.POST:
+            users_data = request.POST.get('users_data', '')
+            created_users = []
+            for line in users_data.splitlines():
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) >= 2:
+                    username, password = parts[0], parts[1]
+                    email = parts[2] if len(parts) > 2 else ''
+                    # Create user (default create_user creates non-staff user)
+                    user = User.objects.create_user(username=username, password=password, email=email)
+                    created_users.append(user)
+            message = f"Created {len(created_users)} users."
+            non_staff_users = User.objects.filter(is_staff=False)
+        elif 'delete_user' in request.POST:
+            user_id = request.POST.get('delete_user')
+            user = get_object_or_404(User, id=user_id)
+            user.delete()
+            message = f"User {user.username} deleted successfully."
+            non_staff_users = User.objects.filter(is_staff=False)
+    return render(request, 'admin/create_users.html', {'non_staff_users': non_staff_users, 'message': message})
 
