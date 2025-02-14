@@ -10,6 +10,9 @@ aiosqlite
 jinja2
 alembic
 django
+mysqlclient
 django-tables2
 pandas
 gunicorn
+dj-database-url
+psycopg2
