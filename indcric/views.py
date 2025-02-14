@@ -11,6 +11,9 @@ from indcric.models import User, Payment, Wallet, Match, Player, Team, Attendanc
 from .tables import UpcomingMatchTable
 import pandas as pd
 from django.contrib.admin.views.decorators import staff_member_required
+import logging
+
+logger = logging.getLogger(__name__)
 
 def register_view(request):
     if request.method == 'POST':
@@ -30,7 +33,6 @@ def login_view(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                # Redirect to the Dashboard page
                 return redirect('dashboard')
             else:
                 csrf_token = get_token(request)
