@@ -12,3 +12,4 @@ alembic
 django
 django-tables2
 pandas
+gunicorn
