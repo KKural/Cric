@@ -80,12 +80,18 @@ WSGI_APPLICATION = "indcric.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 DATABASES = {
-    'default': dj_database_url.config(default=os.getenv('DB_CONNECTION'))
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv("databasename"),
+        'USER': os.getenv("username"),
+        'PASSWORD': os.getenv("password"),
+        'HOST': os.getenv("hostname"),
+        'PORT': os.getenv("port"),
+        'OPTIONS': {
+            'options': '-c search_path=django_schema,public'
+        }
+    }
 }
-# Since the DB already uses the public schema, remove or comment out the OPTIONS configuration
-# DATABASES['default']['OPTIONS'] = {
-#     'options': '-c search_path=public'
-# }
 
 
 # Password validation
