@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required  # add staff_member_required import
 from django.db.models import Count  # add Count import
 from .models import User, Payment, Wallet, Attendance, Match, Team, Player  # Added Payment, Wallet, Attendance, Match, and Team imports
+from decimal import Decimal  # add Decimal import
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -34,8 +35,6 @@ def admin_dashboard(request: HttpRequest):
         user.matches = ", ".join(match.name for match in matches) if matches.exists() else "N/A"
     logger.debug(f"Queried {len(users)} users with payment, advance and match info")
     
-    # Remove debugging breakpoint if not needed:
-    # pdb.set_trace()
     return render(request, 'admin/dashboard.html', {'indcric_users': users})
 
 @login_required
@@ -115,7 +114,7 @@ def create_match(request: HttpRequest):
                     if uid.strip():
                         user = User.objects.get(id=uid.strip())
                         Player.objects.get_or_create(user=user, defaults={'team': team2, 'role': 'player'})
-            return redirect('admin:admin_dashboard')
+            return redirect('dashboard')
         else:
             message = "All match fields are required."
     return render(request, 'admin/create_match.html', {"message": message, "teams": teams, "users": users})
@@ -123,47 +122,89 @@ def create_match(request: HttpRequest):
 @staff_member_required
 def update_payments(request: HttpRequest):
     selected_match = None
-    attended_players = []
-    if request.method == 'POST':
-        match_id = request.POST.get('match_id')
-        if match_id:
-            match = get_object_or_404(Match, pk=match_id)
+    team1_players = []
+    team2_players = []
+    match_id = request.GET.get('match_id') or request.POST.get('match_id')
+    recent_matches = Match.objects.order_by('-date')[:3]
+    if match_id:
+        selected_match = get_object_or_404(Match, pk=match_id)
+    else:
+        selected_match = recent_matches.first()
+    
+    if selected_match:
+        team1_players = Player.objects.filter(team=selected_match.team1, attendance__match=selected_match, attendance__attended=True)
+        team2_players = Player.objects.filter(team=selected_match.team2, attendance__match=selected_match, attendance__attended=True)
+        if request.method == 'POST':
+            logger.debug(f"POST data: {request.POST}")  # Log POST debug info
             # If “paid_...” checkboxes are present, process payments
             if any(k.startswith('paid_') for k in request.POST.keys()):
-                # Gather the attended players for cost splitting
                 attended_player_qs = Player.objects.filter(
-                    attendance__match=match, attendance__attended=True
+                    attendance__match=selected_match, attendance__attended=True
                 ).distinct()
                 attended_count = attended_player_qs.count()
                 if attended_count > 0:
-                    cost_per_player = match.cost / attended_count
+                    cost_per_player = Decimal(selected_match.cost) / attended_count
+                    logger.debug(f"Cost per player: {cost_per_player}")
                     for player in attended_player_qs:
-                        if request.POST.get(f'paid_{player.id}', 'off') == 'on':
-                            # Deduct from wallet
+                        field_name = f'paid_{player.id}'
+                        if field_name in request.POST:
                             wallet = Wallet.objects.filter(user=player.user).first()
-                            if wallet and wallet.amount >= cost_per_player:
-                                wallet.amount -= cost_per_player
-                                wallet.save()
-                            # Mark Payment as paid
-                            Payment.objects.update_or_create(
-                                user=player.user,
-                                date=match.date,
-                                defaults={'amount': cost_per_player, 'status': 'paid'},
-                            )
-                return redirect('admin:update_payments')
-            else:
-                # Just selected the match from the dropdown
-                selected_match = match
-                attended_players = Player.objects.filter(
-                    attendance__match=match, attendance__attended=True
-                ).distinct()
+                            if wallet:
+                                # Check if payment already exists
+                                payment_exists = Payment.objects.filter(user=player.user, match=selected_match).exists()
+                                if not payment_exists and wallet.status == 'pending':
+                                    # If wallet insufficient, allow negative or mark as cash
+                                    if wallet.amount >= cost_per_player:
+                                        wallet.amount -= cost_per_player
+                                        new_method = 'wallet'
+                                        status = 'paid'
+                                    elif wallet.amount < 0:
+                                        new_method = 'overdraft'
+                                        status = 'pending'
+                                        # should not be paid until the wallet is topped up
+                                    else:
+                                        #  treat as cash and dont deduct from wallet
+                                        new_method = 'transfer'
+                                        status = 'paid'
+                                    wallet.date = selected_match.date
+                                    wallet.save()
+                                    Payment.objects.create(
+                                        user=player.user,
+                                        match=selected_match,
+                                        amount=cost_per_player,
+                                        status=status,
+                                        method=new_method,
+                                        date=selected_match.date
+                                    )
+                    return redirect('admin:update_payments')
+        else:
+            # Just selected the match from the list
+            attended_players = Player.objects.filter(
+                attendance__match=selected_match, attendance__attended=True
+            ).distinct()
 
     # Show the next 3 upcoming or recent matches
     recent_matches = Match.objects.order_by('-date')[:3]
+    # Include wallet balances in the context
+    team1_players = [
+        {
+            'player': player,
+            'wallet_balance': Wallet.objects.filter(user=player.user).first().amount if Wallet.objects.filter(user=player.user).exists() else 0
+        }
+        for player in team1_players
+    ]
+    team2_players = [
+        {
+            'player': player,
+            'wallet_balance': Wallet.objects.filter(user=player.user).first().amount if Wallet.objects.filter(user=player.user).exists() else 0
+        }
+        for player in team2_players
+    ]
     return render(request, 'admin/update_payments.html', {
         'recent_matches': recent_matches,
         'selected_match': selected_match,
-        'attended_players': attended_players,
+        'team1_players': team1_players,
+        'team2_players': team2_players,
     })
 
 @login_required
@@ -187,6 +228,58 @@ def create_users(request: HttpRequest):
         non_staff_users = User.objects.filter(is_staff=False)
     return render(request, 'admin/create_users.html', {'non_staff_users': non_staff_users, 'message': message})
 
+@staff_member_required
+def manage_matches(request):
+    return render(request, 'manage_matches.html')
+
+@staff_member_required
+def attendance(request, match_id=None):
+    selected_match = None
+    team1_players = []
+    team2_players = []
+    attended_player_ids = set()
+    match_id = match_id or request.GET.get('match_id') or request.POST.get('match_id')
+    recent_matches = Match.objects.order_by('-date')[:3]
+    if match_id:
+        selected_match = get_object_or_404(Match, pk=match_id)
+    else:
+        selected_match = recent_matches.first()
+    
+    if selected_match:
+        team1_players = Player.objects.filter(team=selected_match.team1)
+        team2_players = Player.objects.filter(team=selected_match.team2)
+        if request.method == 'POST':
+            # If “attended_...” checkboxes are present, update attendance
+            if any(k.startswith('attended_') for k in request.POST.keys()):
+                for player in team1_players | team2_players:
+                    attended = request.POST.get(f'attended_{player.id}', 'off') == 'on'
+                    Attendance.objects.update_or_create(
+                        player=player,
+                        match=selected_match,
+                        defaults={'attended': attended}
+                    )
+                # Update attended_player_ids after saving attendance
+                attended_player_ids = set(
+                    Attendance.objects.filter(match=selected_match, attended=True)
+                    .values_list('player_id', flat=True)
+                )
+                return redirect('attendance', match_id=selected_match.id)
+        else:
+            # Build a set for quick “attended” lookup
+            attended_player_ids = set(
+                Attendance.objects.filter(match=selected_match, attended=True)
+                .values_list('player_id', flat=True)
+            )
+
+    context = {
+        'recent_matches': recent_matches,
+        'selected_match': selected_match,
+        'team1_players': team1_players,
+        'team2_players': team2_players,
+        'attended_player_ids': attended_player_ids,
+    }
+    return render(request, 'attendance.html', context)
+
 def get_urls():
     urls = original_get_urls()
     custom_urls = [
@@ -196,6 +289,8 @@ def get_urls():
         path('create_match/', admin.site.admin_view(create_match), name='create_match'),
         path('update_payments/', admin.site.admin_view(update_payments), name='update_payments'),
         path('create_users/', admin.site.admin_view(create_users), name='create_users'),
+        path('manage_matches/', admin.site.admin_view(manage_matches), name='manage_matches'),
+        path('attendance/', admin.site.admin_view(attendance), name='attendance'),
     ]
     return custom_urls + urls
 

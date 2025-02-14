@@ -7,9 +7,14 @@ class User(AbstractUser):
 
 class Payment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    match = models.ForeignKey('Match', on_delete=models.CASCADE)  # Link to Match
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, default='pending')
     date = models.DateField(auto_now_add=True)
+    method = models.CharField(max_length=20, default='wallet')  # 'wallet' or 'cash'
+    
+    class Meta:
+        unique_together = ('user', 'match')  # Ensure each user can only be paid once per match
 
 class Wallet(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
