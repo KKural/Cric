@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     
     "cric_users",
     "cric_home",
+    "cric_manage",
 ]
 SITE_ID = 1  # added to support django_site table
 
@@ -70,11 +71,11 @@ ROOT_URLCONF = "cric_core.urls"
 
 TEMPLATES = [
     {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [os.path.join(BASE_DIR,  'templates')],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / "templates"],  # include your custom templates folder if needed
+        'APP_DIRS': True,  # ensures app templates (like cric_manage) are detected
+        'OPTIONS': {
+            'context_processors': [
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",

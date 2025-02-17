@@ -15,17 +15,13 @@ from .forms import ProfileForm, EmailForm, UsernameForm
 
 User = get_user_model()
 
+@login_required 
 def profile_view(request, username=None):
-    if username:
-        profile = get_object_or_404(User, username=username).profile
-    else:
-        # Instead of using a try/except that calls redirect_to_login,
-        # check explicitly if the user has a profile.
-        if not hasattr(request.user, 'profile'):
-            messages.error(request, "Profile not found. Please update your profile settings.")
-            return redirect('profile-settings')
-        profile = request.user.profile
-    return render(request, 'cric_users/profile.html', {'profile':profile})
+    if not username:
+        # Use current user's username; no POST data in GET requests.
+        username = request.user.username
+    profile = get_object_or_404(User, username=username)
+    return render(request, 'cric_users/profile.html', {'profile': profile})
 
 
 @login_required
@@ -38,20 +34,19 @@ def profile_edit_view(request):
                 form = ProfileForm(request.POST, request.FILES, instance=request.user.profile)
                 if form.is_valid():
                     form.save()
-                    return redirect('profile')
+                    return redirect('cric_users/profile')
     except Exception as e:
         # The transaction has been rolled back automatically
         messages.error(request, f'An error occurred: {e}')
         return redirect('profile-settings')
     
     onboarding = (request.path == reverse('profile-onboarding'))
-    return render(request, 'cric_users/profile_edit.html', {'form': form, 'onboarding': onboarding})
+    return render(request, 'profile_edit.html', {'form': form, 'onboarding': onboarding})
 
 
 @login_required
 def profile_settings_view(request):
-    # Changed template path from 'cric_users/profile_settings.html' to 'a_users/profile_settings.html'
-    return render(request, 'a_users/profile_settings.html')
+    return render(request, 'cric_users/profile_settings.html')
 
 
 @login_required
@@ -99,10 +94,10 @@ def profile_usernamechange(request):
         if form.is_valid():
             form.save()
             messages.success(request, 'Username updated successfully.')
-            return redirect('profile-settings')
+            return redirect('cric_users/profile-settings')
         else:
             messages.warning(request, 'Username not valid or already in use')
-            return redirect('profile-settings')
+            return redirect('cric_users/profile-settings')
     
     return redirect('profile-settings')    
 

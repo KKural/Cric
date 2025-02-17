@@ -3,6 +3,8 @@ from django.contrib.auth.models import AbstractUser
 from django.urls import reverse
 
 class User(AbstractUser):
+    # add role field that can take value only from 'batsman', 'bowler', 'allrounder' only
+    role = models.CharField(max_length=20, default='batsman')
     pass
 
 class Payment(models.Model):
@@ -32,27 +34,32 @@ class Attendance(models.Model):
 
 class Match(models.Model):
     name = models.CharField(max_length=100)
-    cost = models.DecimalField(max_digits=10, decimal_places=2)
+    cost = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     duration = models.DecimalField(max_digits=10, decimal_places=2)
-    team1 = models.ForeignKey('Team', on_delete=models.CASCADE, related_name='team1')
-    team2 = models.ForeignKey('Team', on_delete=models.CASCADE, related_name='team2')
     date = models.DateField()
     time = models.TimeField()
-    winner = models.ForeignKey('Team', on_delete=models.CASCADE, related_name='winner', null=True)
+    winner = models.ForeignKey('Team', on_delete=models.CASCADE, related_name='winner', null=True, blank=True)
     location = models.CharField(max_length=100)
-
+    # New fields:
+    cost_per_person = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    attendance_confirmed = models.BooleanField(default=False)
+    
     def get_absolute_url(self):
         return reverse('match_detail', args=[self.pk])
 
 class Team(models.Model):
+    match = models.ForeignKey(Match, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     captain = models.ForeignKey(User, on_delete=models.CASCADE, related_name='captain')
+
+    def __str__(self):
+        return self.name
 
 class Player(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     paid = models.BooleanField(default=False)
-    role = models.CharField(max_length=100)
+    role = models.CharField(max_length=20)
     matches_played = models.PositiveIntegerField(default=0)
     runs_scored = models.PositiveIntegerField(default=0)
     wickets_taken = models.PositiveIntegerField(default=0)
@@ -60,3 +67,6 @@ class Player(models.Model):
     stumps_taken = models.PositiveIntegerField(default=0)
     class Meta:
         unique_together = [('user', 'team')]
+
+    def __str__(self):
+        return self.name
