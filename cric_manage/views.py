@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from cric_users.models import Match, Team, Player, Attendance, Payment
 from django.utils import timezone
 from django.contrib import messages
+from decimal import Decimal
 
 User = get_user_model()
 
@@ -235,3 +236,42 @@ def payments_view(request):
         'attendance_by_player': attendance_by_player,
     }
     return render(request, 'cric_manage/payments.html', context)
+
+
+@login_required
+def manage_users(request):
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        role = request.POST.get('role')
+        is_active = request.POST.get('is_active') == 'True'
+        wallet_amount = request.POST.get('wallet_amount')
+        try:
+            wallet_amount = Decimal(wallet_amount) if wallet_amount else Decimal('0.00')
+        except:
+            wallet_amount = Decimal('0.00')
+            
+        try:
+            user = User.objects.get(pk=user_id)
+            user.username = name
+            user.email = email
+            user.role = role
+            user.is_active = is_active
+            user.save()
+            
+            # Update or create Wallet record
+            wallet = user.wallet_set.first()
+            if wallet:
+                wallet.amount = wallet_amount
+                wallet.save()
+            else:
+                user.wallet_set.create(amount=wallet_amount)
+                
+            messages.success(request, "User updated successfully!")
+        except User.DoesNotExist:
+            messages.error(request, "User not found.")
+            
+    users = User.objects.all()
+    context = {'users': users}
+    return render(request, 'cric_manage/manage_users.html', context)
