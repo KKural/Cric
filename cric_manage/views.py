@@ -6,7 +6,29 @@ from django.utils import timezone
 from django.contrib import messages
 from decimal import Decimal
 
+from django_tables2 import SingleTableMixin
+from django_filters.views import FilterView
+
+from cric_users.models import User
+from .tables import UserHTMxTable
+from .filters import UserFilter
+
 User = get_user_model()
+
+
+class UsersHtmxTableView(SingleTableMixin, FilterView):
+    table_class = UserHTMxTable
+    filterset_class = UserFilter
+    queryset = User.objects.all()
+    paginate_by = 10
+
+    def get_template_names(self):
+        if self.request.htmx:
+            template_name = 'user_table_partial.html'
+        else:
+            template_name = 'user_table_htmx.html'
+        return template_name
+
 
 @login_required
 def create_match_view(request, username=None):

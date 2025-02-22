@@ -48,8 +48,8 @@
                 </div>
             </li>
             {% else %}
-            {% comment %} <li><a href="{% url 'account_login' %}">Login</a></li> {% endcomment %}
-            {% comment %} <li><a href="{% url 'account_signup' %}?next={% url 'profile-onboarding' %}">Signup</a></li> {% endcomment %}
+            <li><a href="{% url 'account_login' %}">Login</a></li> 
+            <li><a href="{% url 'account_signup' %}?next={% url 'profile-onboarding' %}">Signup</a></li> 
             {% endif %}
         </ul>
     </nav>

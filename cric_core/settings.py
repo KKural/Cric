@@ -31,6 +31,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']  # Update with your domain(s) in production
 
+CSRF_TRUSTED_ORIGINS = [ 'https://*' ]
 
 # Application definition
 
@@ -41,20 +42,23 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'django_cleanup.apps.CleanupConfig',
+
     'django_tables2',
     'cric_users.management.commands',
     'django_htmx',
     'django.contrib.sites',
     'allauth',
     'allauth.account',
+    # 'allauth.socialaccount',
     
     "cric_users",
     "cric_home",
     "cric_manage",
 ]
-SITE_ID = 1  # added to support django_site table
+SITE_ID = 1 
 
-LOGIN_REDIRECT_URL = '/'  # added to redirect users to home page after login
+LOGIN_REDIRECT_URL = '/' 
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -65,6 +69,12 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",  # Ensure this line is present
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'allauth.account.middleware.AccountMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
+]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 ROOT_URLCONF = "cric_core.urls"
@@ -151,7 +161,6 @@ STATIC_URL = "static/"
 
 STATICFILES_DIRS = [
     BASE_DIR / "static",
-    "/var/www/static/",
 ]
 
 # Default primary key field type
