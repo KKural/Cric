@@ -4,8 +4,10 @@ django-cleanup
 django-allauth
 django-htmx
 django-tables2
+django-filter
 pandas
 gunicorn
 dj-database-url
 psycopg2
 python-dotenv
+crispy-bootstrap4
