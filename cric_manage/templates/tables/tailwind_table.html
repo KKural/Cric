@@ -1,0 +1,76 @@
+{% load django_tables2 %}
+{% load i18n %}
+
+<table class="min-w-full bg-white border border-gray-300">
+    {% block table.thead %}
+    <thead class="bg-gray-100">
+        <tr>
+            {% for column in table.columns %}
+                <th class="border-b border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 uppercase tracking-wider">
+                    {% if column.orderable %}
+                        <a href="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}">{{ column.header }}</a>
+                    {% else %}
+                        <span>{{ column.header }}</span>
+                    {% endif %}
+                </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    {% endblock table.thead %}
+    
+    {% block table.tbody %}
+    <tbody>
+        {% for row in table.page.object_list|default:table.rows %}
+            <tr class="{% cycle 'bg-white' 'bg-gray-50' %}">
+                {% for column, cell in row.items %}
+                    <td class="border-b border-gray-300 px-4 py-2 text-sm text-gray-800">{{ cell }}</td>
+                {% endfor %}
+            </tr>
+        {% empty %}
+            {% if table.empty_text %}
+            <tr>
+                <td colspan="{{ table.columns|length }}" class="border-b border-gray-300 px-4 py-2 text-sm text-gray-600">
+                    {{ table.empty_text }}
+                </td>
+            </tr>
+            {% endif %}
+        {% endfor %}
+    </tbody>
+    {% endblock table.tbody %}
+    
+    {% block table.tfoot %}
+    {% if table.has_footer %}
+    <tfoot class="bg-gray-100">
+        <tr>
+            {% for column in table.columns %}
+                <td class="border-b border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">{{ column.footer }}</td>
+            {% endfor %}
+        </tr>
+    </tfoot>
+    {% endif %}
+    {% endblock table.tfoot %}
+</table>
+
+{% if table.page and table.paginator.num_pages > 1 %}
+<nav class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-4" aria-label="Pagination">
+    <div class="hidden sm:block">
+        <p class="text-sm text-gray-700">
+            {% blocktrans with page=table.page.number pages=table.paginator.num_pages %}
+            Page {{ page }} of {{ pages }}
+            {% endblocktrans %}
+        </p>
+    </div>
+    <div class="flex flex-1 justify-between sm:justify-end">
+        {% if table.page.has_previous %}
+            <a href="{% querystring table.prefixed_page_field=table.page.previous_page_number %}" class="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 mr-2">
+                {% trans "Previous" %}
+            </a>
+        {% endif %}
+        {% if table.page.has_next %}
+            <a href="{% querystring table.prefixed_page_field=table.page.next_page_number %}" class="relative inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0">
+                {% trans "Next" %}
+            </a>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}

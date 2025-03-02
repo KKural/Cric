@@ -1,28 +1,35 @@
-from django.forms import ModelForm
 from django import forms
-from django.contrib.auth.models import User
-from .models import User
+from django.contrib.auth import get_user_model
 
-class ProfileForm(ModelForm):
+User = get_user_model()
+
+class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'email' ]
+        fields = ['first_name', 'last_name', 'email', 'role']
+        # Add any additional fields that exist on your User model
         widgets = {
-            'image': forms.FileInput(),
-            'displayname' : forms.TextInput(attrs={'placeholder': 'Add display name'}),
-            'info' : forms.Textarea(attrs={'rows':3, 'placeholder': 'Add information'})
+            'first_name': forms.TextInput(attrs={'class': 'form-control rounded-lg w-full'}),
+            'last_name': forms.TextInput(attrs={'class': 'form-control rounded-lg w-full'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control rounded-lg w-full'}),
+            'role': forms.Select(attrs={'class': 'form-control rounded-lg w-full'}, 
+                                choices=[('batsman', 'Batsman'), 
+                                         ('bowler', 'Bowler'), 
+                                         ('allrounder', 'All-rounder')])
         }
-        
-        
-class EmailForm(ModelForm):
-    email = forms.EmailField(required=True)
 
+class EmailForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['email']
+        widgets = {
+            'email': forms.EmailInput(attrs={'class': 'form-control rounded-lg w-full'})
+        }
 
-
-class UsernameForm(ModelForm):
+class UsernameForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control rounded-lg w-full'})
+        }

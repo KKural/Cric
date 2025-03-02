@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-8 py-12">
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="bg-gray-800 text-white p-6">
+            <h1 class="text-2xl font-bold">Account Settings</h1>
+        </div>
+        
+        <div class="p-6">
+            {% if messages %}
+                <div class="mb-4">
+                    {% for message in messages %}
+                        <div class="p-3 {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %} rounded">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="space-y-8">
+                <!-- Email Settings -->
+                <div class="border-b pb-6">
+                    <h2 class="text-xl font-semibold mb-4">Email Settings</h2>
+                    <div id="email-section" class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500">Current Email</p>
+                            <p class="font-medium">{{ request.user.email }}</p>
+                        </div>
+                        <button hx-get="{% url 'profile-emailchange' %}" 
+                                hx-target="#email-form" 
+                                class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
+                            Change Email
+                        </button>
+                    </div>
+                    <div id="email-form" class="mt-4"></div>
+                </div>
+
+                <!-- Username Settings -->
+                <div class="border-b pb-6">
+                    <h2 class="text-xl font-semibold mb-4">Username Settings</h2>
+                    <div id="username-section" class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500">Current Username</p>
+                            <p class="font-medium">{{ request.user.username }}</p>
+                        </div>
+                        <button hx-get="{% url 'profile-usernamechange' %}" 
+                                hx-target="#username-form" 
+                                class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
+                            Change Username
+                        </button>
+                    </div>
+                    <div id="username-form" class="mt-4"></div>
+                </div>
+
+                <!-- Password Settings -->
+                <div class="border-b pb-6">
+                    <h2 class="text-xl font-semibold mb-4">Password</h2>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500">Password</p>
+                            <p class="font-medium">••••••••</p>
+                        </div>
+                        <a href="{% url 'account_change_password' %}" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">
+                            Change Password
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Account Deletion -->
+                <div>
+                    <h2 class="text-xl font-semibold mb-4">Danger Zone</h2>
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h3 class="text-lg font-medium text-red-800">Delete Account</h3>
+                        <p class="text-red-600 mt-1">Once you delete your account, there is no going back. Please be certain.</p>
+                        <a href="{% url 'profile-delete' %}" class="inline-block mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg">
+                            Delete Account
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

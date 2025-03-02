@@ -24,10 +24,15 @@ class UsersHtmxTableView(SingleTableMixin, FilterView):
 
     def get_template_names(self):
         if self.request.htmx:
-            template_name = 'user_table_partial.html'
+            template_name = 'cric_manage/user_table_partial.html'
         else:
-            template_name = 'user_table_htmx.html'
+            template_name = 'cric_manage/user_table_htmx.html'
         return template_name
+        
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['filter'] = self.filterset  # Add the filter to the context
+        return context
 
 
 @login_required
@@ -297,3 +302,56 @@ def manage_users(request):
     users = User.objects.all()
     context = {'users': users}
     return render(request, 'cric_manage/manage_users.html', context)
+
+@login_required
+def edit_user_view(request, user_id):
+    """View for editing user details via modal form."""
+    try:
+        user = User.objects.get(pk=user_id)
+        wallet = user.wallet_set.first()
+        wallet_amount = wallet.amount if wallet else 0.00
+        
+        if request.method == 'POST':
+            username = request.POST.get('username')
+            email = request.POST.get('email')
+            role = request.POST.get('role')
+            is_staff = request.POST.get('is_staff') == 'True'
+            wallet_amount = request.POST.get('wallet_amount')
+            
+            try:
+                wallet_amount = Decimal(wallet_amount) if wallet_amount else Decimal('0.00')
+            except:
+                wallet_amount = Decimal('0.00')
+                
+            # Update user data
+            user.username = username
+            user.email = email
+            user.role = role
+            user.is_staff = is_staff
+            user.save()
+            
+            # Update or create Wallet record
+            if wallet:
+                wallet.amount = wallet_amount
+                wallet.save()
+            else:
+                user.wallet_set.create(amount=wallet_amount)
+                
+            return render(request, 'cric_manage/edit_user_form.html', {
+                'user': user,
+                'wallet_amount': wallet_amount,
+                'message': 'User updated successfully!',
+                'success': True
+            })
+        
+        # GET request - show the form
+        return render(request, 'cric_manage/edit_user_form.html', {
+            'user': user,
+            'wallet_amount': wallet_amount
+        })
+        
+    except User.DoesNotExist:
+        return render(request, 'cric_manage/edit_user_form.html', {
+            'message': 'User not found.',
+            'success': False
+        })

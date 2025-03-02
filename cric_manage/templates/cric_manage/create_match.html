@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block content %}
 <div class="max-w-4xl mx-auto px-8 py-24">
@@ -51,7 +52,17 @@
                 </h3>
                 <div id="available-users" class="bg-gray-100 p-4 rounded-lg min-h-[200px]" ondrop="drop(event)" ondragover="allowDrop(event)">
                     {% for user in users %}
-                        <div class="bg-white p-2 rounded-md shadow-sm mb-2 cursor-move" draggable="true" ondragstart="drag(event)" id="user-{{ user.id }}" data-user-id="{{ user.id }}">{{ user.username }}</div>
+                        <div class="bg-white p-2 rounded-md shadow-sm mb-2 cursor-move" draggable="true" ondragstart="drag(event)" id="user-{{ user.id }}" data-user-id="{{ user.id }}">
+                            {% if user.role|lower == 'batsman' %}
+                                <img src="{% static 'icons/bat.png' %}" class="inline-block w-4 h-4 mr-1" alt="Batsman"/>
+                            {% elif user.role|lower == 'bowler' %}
+                                <img src="{% static 'icons/ball.png' %}" class="inline-block w-4 h-4 mr-1" alt="Bowler"/>
+                            {% elif user.role|lower == 'allrounder' %}
+                                <img src="{% static 'icons/bat.png' %}" class="inline-block w-4 h-4 mr-1" alt="Batsman"/>
+                                <img src="{% static 'icons/ball.png' %}" class="inline-block w-4 h-4 mr-1" alt="Bowler"/>
+                            {% endif %}
+                            {{ user.username }}
+                        </div>
                     {% endfor %}
                 </div>
             </div>
@@ -94,6 +105,21 @@
 
     .edit-button:hover {
         color: darkgray;
+    }
+    
+    .captain-badge {
+        display: inline-block;
+        background-color: #4b5563;
+        color: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        text-align: center;
+        line-height: 18px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        margin-left: 4px;
+        vertical-align: middle;
     }
 </style>
 
@@ -152,8 +178,25 @@
         var user_id = event.dataTransfer.getData("user_id");
         var userElement = document.getElementById(user_id);
         if (userElement && userElement.dataset.userId) {
+            // Remove captain badge from the element if it exists
+            const existingBadge = userElement.querySelector('.captain-badge');
+            if (existingBadge) {
+                userElement.removeChild(existingBadge);
+            }
+            
             // Use event.currentTarget instead of event.target
-            event.currentTarget.appendChild(userElement);
+            const targetContainer = event.currentTarget;
+            targetContainer.appendChild(userElement);
+            
+            // Check if this is the first player in the team and add captain badge
+            if (targetContainer.id === 'team1-players' || targetContainer.id === 'team2-players') {
+                if (targetContainer.children.length === 1) {
+                    const captainBadge = document.createElement('span');
+                    captainBadge.className = 'captain-badge';
+                    captainBadge.textContent = 'C';
+                    userElement.appendChild(captainBadge);
+                }
+            }
         }
         updateHiddenFields();
     }
@@ -186,6 +229,14 @@
             .concat(Array.from(team2Container.children))
             .filter(child => child.id && child.id.startsWith("user-"));
 
+        // Remove any captain badges
+        allUsers.forEach(user => {
+            const captainBadge = user.querySelector('.captain-badge');
+            if (captainBadge) {
+                user.removeChild(captainBadge);
+            }
+        });
+
         // Clear existing containers
         availableUsersContainer.innerHTML = "";
         team1Container.innerHTML = "";
@@ -204,9 +255,23 @@
 
         for (let i = 0; i < allUsers.length; i++) {
             if (team1Count < maxTeamSize) {
+                // Add captain badge to first player in team 1
+                if (team1Count === 0) {
+                    const captainBadge = document.createElement('span');
+                    captainBadge.className = 'captain-badge';
+                    captainBadge.textContent = 'C';
+                    allUsers[i].appendChild(captainBadge);
+                }
                 team1Container.appendChild(allUsers[i]);
                 team1Count++;
             } else if (team2Count < maxTeamSize) {
+                // Add captain badge to first player in team 2
+                if (team2Count === 0) {
+                    const captainBadge = document.createElement('span');
+                    captainBadge.className = 'captain-badge';
+                    captainBadge.textContent = 'C';
+                    allUsers[i].appendChild(captainBadge);
+                }
                 team2Container.appendChild(allUsers[i]);
                 team2Count++;
             } else {
