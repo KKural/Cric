@@ -14,6 +14,9 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS('Database dropped successfully'))
             else:
                 self.stdout.write(self.style.SUCCESS('Database does not exist'))
+        # 
+        call_command('makemigrations')
+        self.stdout.write(self.style.SUCCESS('Migrations created successfully'))
         
         # Run migrations
         call_command('migrate')
@@ -23,9 +26,9 @@ class Command(BaseCommand):
         call_command('load_initial_data')
         self.stdout.write(self.style.SUCCESS('Initial data loaded successfully'))
         
-        # Create superuser
-        call_command('createsuperuser', interactive=True)
-        self.stdout.write(self.style.SUCCESS('Superuser created successfully'))
+        # # Create superuser
+        # call_command('createsuperuser', interactive=True)
+        # self.stdout.write(self.style.SUCCESS('Superuser created successfully'))
         
         
         
