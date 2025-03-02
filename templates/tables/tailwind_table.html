@@ -1,0 +1,96 @@
+{% load django_tables2 %}
+{% load i18n %}
+
+<div class="overflow-x-auto">
+  <table class="min-w-full border border-gray-300 divide-y divide-gray-300">
+    <thead class="bg-gray-100">
+      <tr>
+        {% for column in table.columns %}
+          <th scope="col"
+              class="px-4 py-3 text-left text-sm font-medium text-gray-700 border-b border-gray-300 cursor-pointer"
+              hx-get="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}"
+              hx-trigger="click"
+              hx-target="div.table-container"
+              hx-swap="outerHTML"
+              hx-indicator=".progress">
+            {{ column.header }}
+            {% if column.orderable %}
+              {% if column.order_by_alias.ascending %}
+                <span class="ml-1">&#9650;</span>
+              {% elif column.order_by_alias.descending %}
+                <span class="ml-1">&#9660;</span>
+              {% endif %}
+            {% endif %}
+          </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody class="bg-white divide-y divide-gray-200">
+      {% for row in table.rows %}
+        <tr class="hover:bg-gray-50">
+          {% for column, cell in row.items %}
+            <td class="px-4 py-3 text-sm text-gray-800 border-b border-gray-200">{{ cell }}</td>
+          {% endfor %}
+        </tr>
+      {% empty %}
+        <tr>
+          <td colspan="{{ table.columns|length }}" class="px-4 py-3 text-center text-sm text-gray-500">
+            No records found.
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Pagination Section -->
+{% if table.page %}
+  <div class="mt-4">
+    <nav class="flex justify-center" aria-label="Pagination">
+      <ul class="inline-flex items-center space-x-1">
+        {% if table.page.has_previous %}
+          <li>
+            <a href="#"
+               class="px-3 py-2 bg-white border border-gray-300 rounded-l hover:bg-gray-200 text-gray-600"
+               hx-get="{% querystring table.prefixed_page_field=table.page.previous_page_number %}"
+               hx-trigger="click"
+               hx-target="div.table-container"
+               hx-swap="outerHTML">
+               &laquo;
+            </a>
+          </li>
+        {% endif %}
+        {% for num in table.page.paginator.page_range %}
+          {% if table.page.number == num %}
+            <li>
+              <span class="px-3 py-2 bg-blue-500 text-white border border-blue-500">{{ num }}</span>
+            </li>
+          {% else %}
+            <li>
+              <a href="#"
+                 class="px-3 py-2 bg-white border border-gray-300 hover:bg-gray-200 text-gray-600"
+                 hx-get="{% querystring table.prefixed_page_field=num %}"
+                 hx-trigger="click"
+                 hx-target="div.table-container"
+                 hx-swap="outerHTML">
+                 {{ num }}
+              </a>
+            </li>
+          {% endif %}
+        {% endfor %}
+        {% if table.page.has_next %}
+          <li>
+            <a href="#"
+               class="px-3 py-2 bg-white border border-gray-300 rounded-r hover:bg-gray-200 text-gray-600"
+               hx-get="{% querystring table.prefixed_page_field=table.page.next_page_number %}"
+               hx-trigger="click"
+               hx-target="div.table-container"
+               hx-swap="outerHTML">
+               &raquo;
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </div>
+{% endif %}

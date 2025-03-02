@@ -1,0 +1,173 @@
+{# product/templates/product_table_htmx.html #}
+{% extends "base.html" %}
+{% load static %}
+{% load render_table from django_tables2 %}
+{% load i18n %}
+
+{% block main %}
+    <h1>Users table</h1>
+
+    {# Updated search form using correct URL name with HTMX push-url to maintain browser history #}
+    <form hx-get="{% url 'manage-users' %}" 
+          hx-target="div.table-container" 
+          hx-swap="outerHTML" 
+          hx-indicator=".progress" 
+          hx-push-url="true"
+          class="form-inline mb-3">
+        <input type="text" name="query" placeholder="Search users" class="form-control mr-2" style="width: 60%; height: 50px;"> 
+        <button type="submit" class="btn btn-primary" style="width: 10%; height: 60px;">Search</button>
+    </form>
+
+    <div class="progress">
+        <div class="indeterminate"></div>
+    </div>
+
+    <style>
+        /* Custom table styling for more compact appearance */
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed; /* This helps control column widths */
+        }
+        
+        .table-container th, .table-container td {
+            padding: 0.5rem;
+            text-align: left;
+            vertical-align: middle;
+            border: 1px solid #e2e8f0;
+        }
+        
+        /* Custom widths for specific columns */
+        .table-container th:nth-child(1), .table-container td:nth-child(1) { 
+            width: 5%; /* ID column */
+        }
+        .table-container th:nth-child(2), .table-container td:nth-child(2) { 
+            width: 25%; /* Username column */
+        }
+        .table-container th:nth-child(3), .table-container td:nth-child(3) { 
+            width: 10%; /* Role column */
+            text-align: center;
+        }
+        .table-container th:nth-child(4), .table-container td:nth-child(4) { 
+            width: 25%; /* Last Login column */
+        }
+        .table-container th:nth-child(5), .table-container td:nth-child(5) { 
+            width: 10%; /* Staff Status column */
+            text-align: center;
+        }
+        .table-container th:nth-child(6), .table-container td:nth-child(6) { 
+            width: 15%; /* Wallet Amount column */
+            text-align: right;
+        }
+        
+        /* Make table rows clickable */
+        .table-container tbody tr {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .table-container tbody tr:hover {
+            background-color: #f3f4f6 !important;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 0.5rem;
+            width: 50%;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+    </style>
+
+    <div class="table-container">
+        {% render_table table %}
+    </div>
+    
+    <!-- Modal for editing user -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 class="text-xl font-bold mb-4">Edit User</h2>
+            <div id="editUserForm">
+                <!-- Form content will be loaded via HTMX -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // When the page loads, add click handlers to table rows
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTableRowHandlers();
+        });
+        
+        // Function to initialize row click handlers
+        function initializeTableRowHandlers() {
+            const tableRows = document.querySelectorAll('.table-container tbody tr');
+            tableRows.forEach(row => {
+                row.addEventListener('click', function() {
+                    // Get the user ID from the first cell
+                    const userId = this.cells[0].innerText;
+                    openUserEditModal(userId);
+                });
+            });
+        }
+        
+        // After HTMX swaps content, reinitialize the handlers
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            if (event.detail.target.classList.contains('table-container')) {
+                initializeTableRowHandlers();
+            }
+        });
+        
+        // Open the modal and load user data
+        function openUserEditModal(userId) {
+            const modal = document.getElementById('editUserModal');
+            const formContainer = document.getElementById('editUserForm');
+            
+            // Load user form via HTMX
+            htmx.ajax('GET', `/manage/edit-user/${userId}/`, {target:'#editUserForm', swap:'innerHTML'});
+            
+            modal.style.display = 'block';
+        }
+        
+        // Close the modal
+        function closeModal() {
+            document.getElementById('editUserModal').style.display = 'none';
+        }
+        
+        // Close modal if user clicks outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('editUserModal');
+            if (event.target == modal) {
+                closeModal();
+            }
+        }
+    </script>
+{% endblock %}
