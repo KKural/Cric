@@ -1,0 +1,22 @@
+<form hx-post="{% url 'profile-emailchange' %}" class="space-y-4 bg-gray-50 p-4 rounded-lg">
+    {% csrf_token %}
+    <div>
+        <label class="block text-sm font-medium text-gray-700">{{ form.email.label }}</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>
+        {% endif %}
+    </div>
+    <div class="flex justify-end space-x-3">
+        <button type="button" 
+                hx-get="{% url 'profile-settings' %}" 
+                hx-target="#email-form" 
+                hx-swap="innerHTML"
+                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">
+            Cancel
+        </button>
+        <button type="submit" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">
+            Save
+        </button>
+    </div>
+</form>

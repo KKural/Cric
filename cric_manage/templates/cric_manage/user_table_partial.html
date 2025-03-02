@@ -1,0 +1,45 @@
+{# product/templates/product_table_partial.html #}
+{% load render_table from django_tables2 %}
+{% load static %}
+
+<div class="table-container">
+    {% render_table table %}
+    
+    {% if filter %}
+    <script>
+        // Preserve the filter parameters in all paginated links and sorting links
+        document.addEventListener("DOMContentLoaded", function() {
+            // Get all pagination and sorting links in the table
+            const links = document.querySelectorAll('.table-container a');
+            
+            // Current filter parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Add filter parameters to each link
+            links.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href && !href.includes('javascript:void(0)')) {
+                    const newUrl = new URL(href, window.location.origin);
+                    
+                    // Add all filter parameters
+                    urlParams.forEach((value, key) => {
+                        if (key !== 'page' && key !== 'sort') {
+                            newUrl.searchParams.set(key, value);
+                        }
+                    });
+                    
+                    // Update the link
+                    link.setAttribute('href', newUrl.toString());
+                    
+                    // Convert regular links to htmx requests
+                    link.setAttribute('hx-get', newUrl.toString());
+                    link.setAttribute('hx-target', 'div.table-container');
+                    link.setAttribute('hx-swap', 'outerHTML');
+                    link.setAttribute('hx-indicator', '.progress');
+                    link.setAttribute('hx-push-url', 'true');
+                }
+            });
+        });
+    </script>
+    {% endif %}
+</div>
