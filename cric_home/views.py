@@ -1,35 +1,23 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from cric_users.models import Match
-from django.utils import timezone
+
+def user_login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user:
+            login(request, user)
+            return redirect('dashboard')  # Redirect to main UI
+        else:
+            return render(request, 'login.html', {'error': 'Invalid credentials'})
+    return render(request, 'login.html')
 
 @login_required
-def home_view(request):
-    upcoming_matches = Match.objects.filter(date__gte=timezone.now().date()).order_by('date', 'time')
-    previous_matches = Match.objects.filter(date__lt=timezone.now().date()).order_by('-date', '-time')
-    context = {
-        'upcoming_matches': upcoming_matches,
-        'previous_matches': previous_matches,
-    }
-    return render(request, "home.html", context)
+def dashboard(request):
+    return render(request, 'dashboard.html')
 
-@login_required
-def match_detail_view(request, match_id):
-    match = get_object_or_404(Match, pk=match_id)
-    teams = match.team_set.all()  # each match has exactly 2 teams
-    if teams.count() >= 2:
-        team1 = teams[0]
-        team2 = teams[1]
-        team1_players = team1.player_set.select_related('user').all()
-        team2_players = team2.player_set.select_related('user').all()
-    else:
-        team1 = team2 = None
-        team1_players = team2_players = []
-    context = {
-        'match': match,
-        'team1': team1,
-        'team2': team2,
-        'team1_players': team1_players,
-        'team2_players': team2_players,
-    }
-    return render(request, 'cric_home/match_detail.html', context)
+def user_logout(request):
+    logout(request)
+    return redirect('login')
