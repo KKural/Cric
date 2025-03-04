@@ -82,18 +82,11 @@ ROOT_URLCONF = "cric_core.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],  # include your custom templates folder if needed
-        'APP_DIRS': True,  # ensures app templates (like cric_manage) are detected
-        'OPTIONS': {
-            'context_processors': [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
+        'DIRS': [BASE_DIR / "templates"],  # Ensure this folder contains login.html
+        'APP_DIRS': True,
+    }
 ]
+
 
 WSGI_APPLICATION = "cric_core.wsgi.application"
 
