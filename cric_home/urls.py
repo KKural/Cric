@@ -1,7 +1,8 @@
 from django.urls import path
-from cric_home.views import *
+from .views import user_login, user_logout, dashboard
 
 urlpatterns = [
-    path('', home_view, name="home"),
-    path('match/<int:match_id>/', match_detail_view, name='match_detail'),
+    path('', user_login, name='login'),
+    path('dashboard/', dashboard, name='dashboard'),
+    path('logout/', user_logout, name='logout'),
 ]
